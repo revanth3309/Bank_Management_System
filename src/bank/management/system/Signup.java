@@ -217,7 +217,7 @@ public class Signup extends JFrame implements ActionListener {
         String state = textState.getText();
 
         try{
-            if (textName.getText().isEmpty()){
+            if (textName.getText().equals("")){
                 JOptionPane.showMessageDialog(null, "Fill all the fields");
             }else {
                 Conn c = new Conn();
