@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Withdrawl extends JFrame implements ActionListener {
 
@@ -64,38 +65,44 @@ public class Withdrawl extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource()==b1) {
+        if (e.getSource() == b1) {
+            ReentrantLock lock = LockManager.getLock(pin);
+            lock.lock(); // 🚦 Enter critical section
             try {
                 String amount = textField.getText();
                 Date date = new Date();
-                if (textField.getText().equals("")) {
+                if (amount.equals("")) {
                     JOptionPane.showMessageDialog(null, "Please enter the Amount you want to withdraw");
-                } else {
-                    Conn c = new Conn();
-                    ResultSet resultSet = c.statement.executeQuery("select * from bank where pin = '" + pin + "'");
-                    int balance = 0;
-                    while (resultSet.next()) {
-                        if (resultSet.getString("type").equals("Deposit")) {
-                            balance += Integer.parseInt(resultSet.getString("amount"));
-                        } else {
-                            balance -= Integer.parseInt(resultSet.getString("amount"));
-                        }
-                    }
-                    if (balance < Integer.parseInt(amount)) {
-                        JOptionPane.showMessageDialog(null, "Insuffient Balance");
-                        return;
-                    }
-
-                    c.statement.executeUpdate("insert into bank values('" + pin + "', '" + date + "', 'Withdrawl', '" + amount + "' )");
-                    JOptionPane.showMessageDialog(null, "Rs. " + amount + " Debited Successfully");
-                    setVisible(false);
-                    new main_Class(pin);
-
+                    return;
                 }
-            } catch (Exception E) {
 
+                Conn c = new Conn();
+                ResultSet resultSet = c.statement.executeQuery("select * from bank where pin = '" + pin + "'");
+                int balance = 0;
+                while (resultSet.next()) {
+                    if (resultSet.getString("type").equals("Deposit")) {
+                        balance += Integer.parseInt(resultSet.getString("amount"));
+                    } else {
+                        balance -= Integer.parseInt(resultSet.getString("amount"));
+                    }
+                }
+
+                if (balance < Integer.parseInt(amount)) {
+                    JOptionPane.showMessageDialog(null, "Insufficient Balance");
+                    return;
+                }
+
+                c.statement.executeUpdate("insert into bank values('" + pin + "', '" + date + "', 'Withdrawl', '" + amount + "' )");
+                JOptionPane.showMessageDialog(null, "Rs. " + amount + " Debited Successfully");
+                setVisible(false);
+                new main_Class(pin);
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } finally {
+                lock.unlock(); //
             }
-        } else if (e.getSource()==b2) {
+        } else if (e.getSource() == b2) {
             setVisible(false);
             new main_Class(pin);
         }

@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Date;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Deposit extends JFrame implements ActionListener {
     String pin;
@@ -60,29 +61,36 @@ public class Deposit extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        try {
-            String amount = textField.getText();
-            Date date = new Date();
-            if (e.getSource()==b1){
-                if (textField.getText().equals("")){
-                    JOptionPane.showMessageDialog(null,"Please enter the Amount you want to Deposit");
-                }else {
-                    Conn c = new Conn();
-                    c.statement.executeUpdate("insert into bank values('"+pin+"', '"+date+"','Deposit', '"+amount+"')");
-                    JOptionPane.showMessageDialog(null,"Rs. "+amount+" Deposited Successfully");
-                    setVisible(false);
-                    new main_Class(pin);
+        if (e.getSource() == b1) {
+            ReentrantLock lock = LockManager.getLock(pin);
+            lock.lock(); // 🚦 Enter critical section
+
+            try {
+                String amount = textField.getText();
+                Date date = new Date();
+
+                if (amount.equals("")) {
+                    JOptionPane.showMessageDialog(null, "Please enter the Amount you want to Deposit");
+                    return;
                 }
-            }else if (e.getSource()==b2){
+
+                Conn c = new Conn();
+                c.statement.executeUpdate("insert into bank values('" + pin + "', '" + date + "', 'Deposit', '" + amount + "')");
+
+                JOptionPane.showMessageDialog(null, "Rs. " + amount + " Deposited Successfully");
                 setVisible(false);
                 new main_Class(pin);
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } finally {
+                lock.unlock();
             }
-        }catch (Exception E){
-            E.printStackTrace();
+        } else if (e.getSource() == b2) {
+            setVisible(false);
+            new main_Class(pin);
         }
-
     }
-
     public static void main(String[] args) {
         new Deposit("");
     }
